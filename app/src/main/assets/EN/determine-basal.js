@@ -250,14 +250,14 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     DeltaPct = round(1+deltaShortRise,2);
 
     // eating now time can be delayed if there is no first bolus or carbs
-    if (now >= ENStartTime && now < ENEndTime && (meal_data.lastNormalCarbTime >= ENStartTime || meal_data.lastBolusNormalTime >= ENStartTime)) ENtimeOK = true;
+    if (now >= ENStartTime && now < ENEndTime && (meal_data.lastNormalCarbTime >= ENStartTime || meal_data.lastENBolusTime >= ENStartTime)) ENtimeOK = true;
     var lastNormalCarbAge = round(( new Date(systemTime).getTime() - meal_data.lastNormalCarbTime ) / 60000);
 
 
     enlog += "nowhrs: " + nowhrs + ", now: " + now +"\n";
     enlog += "ENStartOffset: " + ENStartOffset + ", ENStartTime: " + ENStartTime +"\n";
     enlog += "ENEndOffset: " + ENEndOffset + ", ENEndTime: " + ENEndTime +"\n";
-    enlog += "lastNormalCarbTime: " + meal_data.lastNormalCarbTime + ", lastBolusNormalTime: " + meal_data.lastBolusNormalTime +"\n";
+    enlog += "lastNormalCarbTime: " + meal_data.lastNormalCarbTime + ", lastENBolusTime: " + meal_data.lastENBolusTime +"\n";
     enlog += "lastNormalCarbAge: " + lastNormalCarbAge +"\n";
 
     /*
@@ -368,10 +368,10 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     var ENTime = (( new Date(systemTime).getTime() - ENStartTime) / 60000); // elapsed time since EN Start
     var c1Time = (typeof meal_data.firstCarbTime !== 'undefined' ? (( new Date(systemTime).getTime() - meal_data.firstCarbTime) / 60000) : 9999); // first carb entry after EN start
     var cTime = (( new Date(systemTime).getTime() - meal_data.lastCarbTime) / 60000); // last carb entry after EN start
-    var b1Time = (typeof meal_data.firstNormalBolusTime !== 'undefined' ? (( new Date(systemTime).getTime() - meal_data.firstNormalBolusTime) / 60000) : 9999); // first normal bolus after EN start
-    var bTime = (typeof meal_data.lastBolusNormalTime !== 'undefined' ? (( new Date(systemTime).getTime() - meal_data.lastBolusNormalTime) / 60000) : 9999); // last normal bolus after EN start
+    var b1Time = (typeof meal_data.firstENBolusTime !== 'undefined' ? (( new Date(systemTime).getTime() - meal_data.firstENBolusTime) / 60000) : 9999); // first normal bolus after EN start
+    var bTime = (typeof meal_data.lastENBolusTime !== 'undefined' ? (( new Date(systemTime).getTime() - meal_data.lastENBolusTime) / 60000) : 9999); // last normal bolus after EN start
     // ENWindowOK is when there is a recent COB entry or manual bolus
-    var ENWindowOK = (ENactive && profile.ENWindow > 0 && Math.min(c1Time, cTime ,bTime, b1Time) < profile.ENWindow || (profile.temptargetSet && target_bg == normalTarget));
+    var ENWindowOK = (ENactive && profile.ENWindow > 0 && Math.min(c1Time, cTime ,bTime, b1Time) < profile.ENWindow || (profile.temptargetSet && target_bg <= normalTarget));
     var ENWindowRunTime = Math.min(c1Time, cTime, bTime, b1Time);
 
     // breakfast/first meal related vars
@@ -418,12 +418,6 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     // just after midnight there is a big spike in TDD this will use the 3d avg during this time
 //    var TDD = (nowhrs >=2 ? (tdd24h+tdd3d+tdd_pump_now_ms)/3 : tdd3d);
 //    enlog +="TDD24H:"+round(tdd24h,3)+", TDD7D:"+round(tdd7d,3)+", TDDPUMPNOWMS:"+round(tdd_pump_now_ms,3)+" = TDD:"+round(TDD,3)+"\n";
-
-    // TIR
-    var TIR_suggest = "";
-//    if (meal_data.TIRW2 < meal_data.TIRW1 && Math.max(meal_data.TIRW1L, meal_data.TIRW2L)) == 0 { // if the 2nd hour TIR window is less in range and there are no lows
-//        TIR_suggest = "+";
-//    }
 
     // ins_val used as the divisor for ISF scaling
     var insulinType = profile.insulinType, ins_val = 90, ins_peak = 75;
@@ -555,7 +549,7 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     // for delta > 4 and 105% change from short_avg or within COB window MAX 45 mins use lower target for ISF scaling
     // for all times when EN time is OK use 20% higher target for less ISF scaling
     // var sens_target_bg = c;
-    var sens_target_bg = (ENWindowOK ? ins_val : ins_val * 1.2);
+    var sens_target_bg = (ENWindowOK || bg > SMBbgOffset ? ins_val : ins_val * 1.2);
     // only allow adjusted ISF target when eatingnow time is OK and bg below ISFbgMax, dont use at night
     //sens_target_bg = (ENtimeOK && bg < ISFbgMax ? sens_target_bg : target_bg);
     sens_target_bg = (ENactive ? sens_target_bg : target_bg);
@@ -734,7 +728,8 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
 
     // min_bg of 90 -> threshold of 65, 100 -> 70 110 -> 75, and 130 -> 85
     //var threshold = Math.max(min_bg - 0.5*(min_bg-40),72); // minimum 72
-    var threshold = Math.max(min_bg-0.5*(min_bg-40), profile.normal_target_bg-9, 75); // minimum 75 or current profile target - 10
+//    var threshold = Math.max(min_bg-0.5*(min_bg-40), profile.normal_target_bg-9, 75); // minimum 75 or current profile target - 10
+    var threshold = (ENWindowOK ? Math.max(min_bg-0.5*(min_bg-40),75) : Math.max(profile.normal_target_bg-9, 75)); // minimum 75 or current profile target - 10
 
     //console.error(reservoir_data);
 
