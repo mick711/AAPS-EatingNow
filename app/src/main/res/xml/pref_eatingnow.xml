@@ -224,7 +224,7 @@
         android:summary="General settings for Eating Now"
         app:initialExpandedChildrenCount="0">
 
-        <Preference android:summary="Eating Now operates within the Start and End time specified.\nThe Eating Now Window becomes active when there is a manual bolus or carb entry after the Start Time setting.\nWhen the Eating Now Window expires this is considered to be the period when not eating and different SMB sizes may be configured.">
+        <Preference android:summary="Eating Now operates within the Start and End time specified.\nThe Eating Now Window becomes active when there is a manual bolus or active carb entry after the Start Time setting.\nWhen the Eating Now Window expires this is considered to be the period when not eating and different SMB sizes may be configured.">
         </Preference>
 
         <info.nightscout.androidaps.utils.textValidator.ValidatingEditTextPreference
@@ -369,7 +369,7 @@
         </PreferenceCategory>
 
         <PreferenceCategory
-            android:title="Easting Now ISF"
+            android:title="Eating Now ISF"
             android:summary="ISF related settings."
             app:initialExpandedChildrenCount="0">
 
